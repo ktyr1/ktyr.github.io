@@ -1,0 +1,181 @@
+{
+  "title": "JSON-Editor Example",
+  "schema": {
+    "title": "Конфігуратор керування",
+    "type": "object",
+    "properties": {
+      "drone-controller": {
+        "type": "object",
+        "properties": {
+          "fc-bridge": {
+            "type": "object",
+            "properties": {
+              "joysticks": {
+                "type": "object",
+                "properties": {
+                  "roll": {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 1
+                      }
+                    }
+                  },
+                  "pitch": {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 2
+                      }
+                    }
+                  },
+                  "throttle": {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 3
+                      }
+                    }
+                  },
+                  "yaw": {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 4
+                      }
+                    }
+                  },
+                  "select-target": {
+                    "type": "object",
+                    "title": "Вибір цілі",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 11
+                      }
+                    }
+                  },
+                  "automatic-control": {
+                    "type": "object",
+                    "title": "Автоматичне керування",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 11
+                      }
+                    }
+                  },
+                  "arm": {
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 5
+                      }
+                    }
+                  },
+                  "zoom-toggle": {
+                    "type": "object",
+                    "title": "Зум",
+                    "properties": {
+                      "channel": {
+                        "type": "integer",
+                        "default": 7
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "video-processing-pipeline": {
+        "type": "object",
+        "title": "Відео-пайплан",
+        "properties": {
+          "Camera": {
+            "title": "Камера",
+            "description": "При використанні камери, якої немає у списку, зверніться до виробника.",
+            "properties": {
+              "Model": {
+                "title": "Модель",
+                "type": "string",
+                "enum": [
+                  "Digital Waveshare G",
+                  "Analog Phoenix 2 SP",
+                  "Analog Foxeer Micro Cat 3"
+                ]
+              },
+              "Camera pitch": {
+                "title": "Кут повороту камери",
+                "description": "При використанні кріплення KTYR - 0. Перед зміною даного параметру рекомендуємо порадитись з виробником.",
+                "type": "integer"
+              }
+            }
+          },
+          "zoom": {
+            "type": "object",
+            "title": "Зум",
+            "properties": {
+              "centered": {
+                "title": "Центрований",
+                "description": "Розміщення зуму на OSD (false - справа знизу, true - в центрі знизу).",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "startval": {},
+  "config": {
+    "theme": "bootstrap3",
+    "iconlib": "bootstrap3",
+    "object_layout": "normal",
+    "template": "default",
+    "show_errors": "interaction",
+    "required_by_default": 1,
+    "no_additional_properties": 0,
+    "display_required_only": 0,
+    "remove_empty_properties": 0,
+    "keep_oneof_values": 1,
+    "ajax": 0,
+    "ajaxCredentials": 0,
+    "show_opt_in": 0,
+    "disable_edit_json": 1,
+    "disable_collapse": 1,
+    "disable_properties": 1,
+    "disable_array_add": 1,
+    "disable_array_reorder": 1,
+    "disable_array_delete": 1,
+    "enable_array_copy": 0,
+    "array_controls_top": 0,
+    "disable_array_delete_all_rows": 1,
+    "disable_array_delete_last_row": 1,
+    "prompt_before_delete": 1,
+    "lib_aceeditor": 0,
+    "lib_autocomplete": 0,
+    "lib_sceditor": 0,
+    "lib_simplemde": 0,
+    "lib_select2": 0,
+    "lib_selectize": 0,
+    "lib_choices": 0,
+    "lib_flatpickr": 0,
+    "lib_signaturepad": 0,
+    "lib_mathjs": 0,
+    "lib_cleavejs": 0,
+    "lib_jodit": 0,
+    "lib_jquery": 0,
+    "lib_dompurify": 0
+  },
+  "code": "// The following lines are mandatory and readonly. You can add custom code above and below.\nif (jseditor instanceof window.JSONEditor) jseditor.destroy();\njseditor = new window.JSONEditor(document.querySelector(\"#json-editor-form\"), jedata);\n\n// includeJS(\"https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js\")\n// Custom code starts here\n// Create a Save button\nconst saveButton = document.createElement('button');\nsaveButton.textContent = 'Save';\nsaveButton.type = 'button';\nsaveButton.className = 'btn btn-primary';\n\ndocument.querySelector(\"#json-editor-form\").appendChild(saveButton);\n\nsaveButton.addEventListener('click', () => {\n  try {\n    const hasCustomErrors = (data) => {\n      const joysticks = data['drone-controller']['fc-bridge']['joysticks'];\n      const channelAssignments = {};\n      let errorsArray = [];\n      let incorrectCameraPitch = false;\n      let incorrectParams = [];\n\n      for (const key in joysticks) {\n        const channel = joysticks[key].channel;\n        if (!channelAssignments[channel]) {\n          channelAssignments[channel] = [];\n        }\n        channelAssignments[channel].push(key);\n      }\n\n      for (const channel in channelAssignments) {\n        const keys = channelAssignments[channel];\n        if (channel <= 0 || channel >= 13) {\n          incorrectParams.push(keys);\n          break;\n        }\n        if (keys.length > 1) {\n          if (\n            keys.length === 2 &&\n            keys.includes(\"automatic-control\") &&\n            keys.includes(\"select-target\")\n          ) {\n            continue;\n          }\n          errorsArray = keys;\n          break;\n        }\n      }\n      const cameraPitch = data['video-processing-pipeline']['Camera']['Camera pitch'];\n      if (cameraPitch > 20 || cameraPitch < -20) incorrectCameraPitch = true;\n      return { errorsArray, incorrectParams, incorrectCameraPitch };\n    }\n\n    const processRawData = (rawData) => {\n      rawData['camera'] = {};\n      const cameraModel = rawData['video-processing-pipeline']['Camera']['Model'];\n      rawData['camera']['pitch'] = rawData['video-processing-pipeline']['Camera']['Camera pitch'];\n      rawData['camera']['camera_calibration'] = cameraModel;\n      switch (cameraModel) {\n        case \"Analog Foxeer Micro Cat 3\": rawData['camera']['type'] = \"analog\"; break;\n        case \"Analog Phoenix 2 SP\": rawData['camera']['type'] = \"analog\"; break;\n        case \"Digital Waveshare G\": rawData['camera']['type'] = \"digital\"; break;\n        default: break;\n      }\n      delete rawData['video-processing-pipeline']['Camera'];\n      return rawData;\n    }\n\n\n    const errors = jseditor.validate();\n    const { errorsArray, incorrectParams, incorrectCameraPitch } = hasCustomErrors(jseditor.getValue())\n\n    if (errors.length || errorsArray.length || incorrectParams.length || incorrectCameraPitch) {\n      console.log(errors);\n      if (errorsArray.length) alert(errorsArray + ' can not have the same channels')\n      if (incorrectParams.length) alert('Invalid value for ' + incorrectParams);\n      if (incorrectCameraPitch) alert('Invalid value for camera pitch! Allowed range: [-20; 20]');\n    } else {\n      const jsonData = jseditor.getValue();\n      const modifiedData = processRawData(jsonData);\n      const yamlData = jsyaml.dump(modifiedData);\n      const base64Data = btoa(unescape(encodeURIComponent(yamlData)));\n      const blob = new Blob([base64Data], { type: 'text/plain' });\n      const link = document.createElement('a');\n      link.href = URL.createObjectURL(blob);\n      link.download = 'drone-app-public.yaml.base64';\n      link.click();\n      alert(\"Конфіг збережено успішно. Підключіть ключ до ПК та залийте конфіг туди. Додатково, перевірте підключення камери.\");\n\n    }\n  } catch (error) {\n    console.error('Validation failed:', error);\n  }\n});\n",
+  "style": ".btn-primary {\n    background-color: orange; \ncolor: black;}}",
+  "desc": "Add optional description here. (HTML format)"
+}
